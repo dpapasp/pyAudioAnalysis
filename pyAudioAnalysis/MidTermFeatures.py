@@ -7,9 +7,38 @@ import matplotlib.pyplot as plt
 from pyAudioAnalysis import utilities
 from pyAudioAnalysis import audioBasicIO
 from pyAudioAnalysis import ShortTermFeatures
+import librosa as lb
 eps = 0.00000001
 
 """ Time-domain audio features """
+
+def _audio_to_librosa_features(filename, sampling_rate=22050):
+    y, sr = lb.load(filename, sr=sampling_rate)
+
+    print("Calculating librosa features for {}.".format(filename))
+
+    feature_names = ["spectral_bandwidth_mean","spectral_flatness_mean","spectral_rms_mean",
+                   "spectral_bandwidth_std","spectral_flatness_std","spectral_rms_std",
+                     "spectral_bandwidth_delta_mean", "spectral_bandwidth_delta_std",
+                    "spectral_flatness_delta_mean", "spectral_flatness_delta_std",
+                    "spectral_rms_delta_mean", "spectral_rms_delta_std"]
+
+
+    features = []
+    calculations = []
+    calculations.append(lb.feature.spectral_bandwidth(y=y, sr=sr))
+    calculations.append(lb.feature.spectral_flatness(y=y))
+    calculations.append(lb.feature.rms(y=y))
+
+
+    for c in calculations:
+        features.append(np.mean(c))
+        features.append(np.std(c))
+        features.append(np.mean(lb.feature.delta(c)))
+        features.append(np.std(lb.feature.delta(c)))
+
+
+    return np.array(features), feature_names
 
 
 def beat_extraction(short_features, window_size, plot=False):
@@ -125,10 +154,10 @@ def mid_feature_extraction(signal, sampling_rate, mid_window, mid_step,
 
 
 """ Feature Extraction Wrappers
- - The first two feature extraction wrappers are used to extract 
-   long-term averaged audio features for a list of WAV files stored in a 
+ - The first two feature extraction wrappers are used to extract
+   long-term averaged audio features for a list of WAV files stored in a
    given category.
-   It is important to note that, one single feature is extracted per WAV 
+   It is important to note that, one single feature is extracted per WAV
    file (not the whole sequence of feature vectors)
 
  """
@@ -136,9 +165,10 @@ def mid_feature_extraction(signal, sampling_rate, mid_window, mid_step,
 
 def directory_feature_extraction(folder_path, mid_window, mid_step,
                                  short_window, short_step,
-                                 compute_beat=True):
+                                 compute_beat=True,
+                                 librosa_features=False):
     """
-    This function extracts the mid-term features of the WAVE files of a 
+    This function extracts the mid-term features of the WAVE files of a
     particular folder.
 
     The resulting feature vector is extracted by long-term averaging the
@@ -151,6 +181,7 @@ def directory_feature_extraction(folder_path, mid_window, mid_step,
         - short_window, short_step:    short-term window and step (in seconds)
     """
 
+
     mid_term_features = np.array([])
     process_times = []
 
@@ -159,7 +190,7 @@ def directory_feature_extraction(folder_path, mid_window, mid_step,
     for files in types:
         wav_file_list.extend(glob.glob(os.path.join(folder_path, files)))
 
-    wav_file_list = sorted(wav_file_list)    
+    wav_file_list = sorted(wav_file_list)
     wav_file_list2, mid_feature_names = [], []
     for i, file_path in enumerate(wav_file_list):
         print("Analyzing file {0:d} of {1:d}: {2:s}".format(i + 1,
@@ -167,12 +198,12 @@ def directory_feature_extraction(folder_path, mid_window, mid_step,
                                                             file_path))
         if os.stat(file_path).st_size == 0:
             print("   (EMPTY FILE -- SKIPPING)")
-            continue        
+            continue
         sampling_rate, signal = audioBasicIO.read_audio_file(file_path)
         if sampling_rate == 0:
-            continue        
+            continue
 
-        t1 = time.time()        
+        t1 = time.time()
         signal = audioBasicIO.stereo_to_mono(signal)
         if signal.shape[0] < float(sampling_rate)/5:
             print("  (AUDIO FILE TOO SMALL - SKIPPING)")
@@ -202,17 +233,30 @@ def directory_feature_extraction(folder_path, mid_window, mid_step,
             if compute_beat:
                 mid_features = np.append(mid_features, beat)
                 mid_features = np.append(mid_features, beat_conf)
+                mid_feature_names.append("beat")
+                mid_feature_names.append("beat_conf")
+
+            if librosa_features:
+                librosa_feat, librosa_feat_names = _audio_to_librosa_features(file_path, sampling_rate=sampling_rate)
+                mid_features = np.append(mid_features, librosa_feat)
+                for element in librosa_feat_names:
+                    mid_feature_names.append(element)
+
             if len(mid_term_features) == 0:
                 # append feature vector
                 mid_term_features = mid_features
             else:
                 mid_term_features = np.vstack((mid_term_features, mid_features))
             t2 = time.time()
+
             duration = float(len(signal)) / sampling_rate
             process_times.append((t2 - t1) / duration)
+
+
+
     if len(process_times) > 0:
         print("Feature extraction complexity ratio: "
-              "{0:.1f} x realtime".format((1.0 / 
+              "{0:.1f} x realtime".format((1.0 /
                                            np.mean(np.array(process_times)))))
     return mid_term_features, wav_file_list2, mid_feature_names
 
@@ -228,7 +272,7 @@ def multiple_directory_feature_extraction(path_list, mid_window, mid_step,
            a.dirsWavFeatureExtraction(['audioData/classSegmentsRec/noise',
                                        'audioData/classSegmentsRec/speech',
                                        'audioData/classSegmentsRec/brush-teeth',
-                                       'audioData/classSegmentsRec/shower'], 1, 
+                                       'audioData/classSegmentsRec/shower'], 1,
                                        1, 0.02, 0.02);
 
     It can be used during the training process of a classification model ,
