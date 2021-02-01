@@ -1,3 +1,11 @@
+""" A new function has been written to add the option to extract
+additional features using Librosa.
+
+Some slight modifications have been performed in
+directory_feature_extraction to add the beat and beat_conf
+in the features names vector.
+"""
+
 from __future__ import print_function
 import os
 import time
@@ -427,3 +435,6 @@ def mid_feature_extraction_file_dir(folder_path, mid_window, mid_step,
         mid_feature_extraction_to_file(f, mid_window, mid_step, short_window,
                                        short_step, output_path,
                                        store_short_features, store_csv, plot)
+        
+# TODO : Write a new function that stores each song in json format.
+# TODO : Test your newly made code in the GTZAN dataset
