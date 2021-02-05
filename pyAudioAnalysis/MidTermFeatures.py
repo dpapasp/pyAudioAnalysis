@@ -449,7 +449,6 @@ def long_feature_wav(wav_file, mid_window, mid_step,
     It is identical to directory_feature_extraction, with simple
     modifications in order to be applied to singular files.
     Very useful to create a collection of json files (1 song -> 1 json).
-    Genre as a feature should be added (very simple).
 
     ARGUMENTS:
         - wav_file:        the path of the WAVE directory
