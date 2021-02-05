@@ -524,24 +524,3 @@ def long_feature_wav(wav_file, mid_window, mid_step,
 
 # TODO : Wrapper for the new function, that creates a collection of json files
 # TODO : Test your newly made code in the GTZAN dataset
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
