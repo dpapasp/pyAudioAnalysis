@@ -436,5 +436,113 @@ def mid_feature_extraction_file_dir(folder_path, mid_window, mid_step,
                                        short_step, output_path,
                                        store_short_features, store_csv, plot)
         
-# TODO : Write a new function that stores each song in json format.
+
+
+
+def long_feature_wav(wav_file, mid_window, mid_step,
+                                 short_window, short_step,
+                                 compute_beat=True,
+                                 librosa_features=False):
+
+    """
+    This function computes the long-term feature per WAV file.
+    It is identical to directory_feature_extraction, with simple
+    modifications in order to be applied to singular files.
+    Very useful to create a collection of json files (1 song -> 1 json).
+    Genre as a feature should be added (very simple).
+
+    ARGUMENTS:
+        - wav_file:        the path of the WAVE directory
+        - mid_window, mid_step:    mid-term window and step (in seconds)
+        - short_window, short_step:    short-term window and step (in seconds)
+
+    RETURNS:
+        - mid_term_feaures: The feature vector of a singular wav file
+        - mid_feature_names: The feature names, useful for formating 
+    """
+    
+
+    mid_term_features = np.array([])
+    
+
+    print("Analyzing file {}.".format(wav_file))
+    
+    sampling_rate, signal = audioBasicIO.read_audio_file(wav_file)
+    if sampling_rate == 0:
+        return -1
+
+    
+    signal = audioBasicIO.stereo_to_mono(signal)
+    if signal.shape[0] < float(sampling_rate)/5:
+        print("  (AUDIO FILE TOO SMALL - SKIPPING)")
+        return -1
+    
+    if compute_beat:
+        mid_features, short_features, mid_feature_names = \
+        mid_feature_extraction(signal, sampling_rate,
+                                    round(mid_window * sampling_rate),
+                                    round(mid_step * sampling_rate),
+                                    round(sampling_rate * short_window),
+                                    round(sampling_rate * short_step))
+        beat, beat_conf = beat_extraction(short_features, short_step)
+    else:
+        mid_features, _, mid_feature_names = \
+        mid_feature_extraction(signal, sampling_rate,
+                                   round(mid_window * sampling_rate),
+                                   round(mid_step * sampling_rate),
+                                   round(sampling_rate * short_window),
+                                   round(sampling_rate * short_step))
+
+    mid_features = np.transpose(mid_features)
+    mid_features = mid_features.mean(axis=0)
+    # long term averaging of mid-term statistics
+    if (not np.isnan(mid_features).any()) and \
+        (not np.isinf(mid_features).any()):
+         if compute_beat:
+            mid_features = np.append(mid_features, beat)
+            mid_features = np.append(mid_features, beat_conf)
+            mid_feature_names.append("beat")
+            mid_feature_names.append("beat_conf")
+         # Simple code added by me 
+         if librosa_features:
+            librosa_feat, librosa_feat_names = _audio_to_librosa_features(wav_file, sampling_rate=sampling_rate)
+            mid_features = np.append(mid_features, librosa_feat)
+            for element in librosa_feat_names:
+                mid_feature_names.append(element)
+
+         if len(mid_term_features) == 0:
+            # append feature vector
+            mid_term_features = mid_features
+         else:
+            mid_term_features = np.vstack((mid_term_features, mid_features))
+         
+    
+    # TODO : Add the Genre as a feature (very simple)
+    return mid_term_features, mid_feature_names
+
+
+
+
+# TODO : Wrapper for the new function, that creates a collection of json files
 # TODO : Test your newly made code in the GTZAN dataset
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
