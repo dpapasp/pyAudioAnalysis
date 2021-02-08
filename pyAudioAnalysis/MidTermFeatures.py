@@ -4,6 +4,9 @@ additional features using Librosa.
 Some slight modifications have been performed in
 directory_feature_extraction to add the beat and beat_conf
 in the features names vector.
+
+New functions have been implemented that handle single audio files and 
+json storing.
 """
 
 from __future__ import print_function
