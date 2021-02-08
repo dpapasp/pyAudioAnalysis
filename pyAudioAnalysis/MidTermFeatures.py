@@ -16,7 +16,9 @@ from pyAudioAnalysis import utilities
 from pyAudioAnalysis import audioBasicIO
 from pyAudioAnalysis import ShortTermFeatures
 import librosa as lb
+import json
 eps = 0.00000001
+
 
 """ Time-domain audio features """
 
@@ -449,6 +451,7 @@ def long_feature_wav(wav_file, mid_window, mid_step,
     It is identical to directory_feature_extraction, with simple
     modifications in order to be applied to singular files.
     Very useful to create a collection of json files (1 song -> 1 json).
+    Genre as a feature should be added (very simple).
 
     ARGUMENTS:
         - wav_file:        the path of the WAVE directory
@@ -519,8 +522,27 @@ def long_feature_wav(wav_file, mid_window, mid_step,
     # TODO : Add the Genre as a feature (very simple)
     return mid_term_features, mid_feature_names
 
+def features_to_json(root_path, file_name, save_location):
+    """
+    Function that saves the features returned from long_feature_wav
+    to json files. This functions operates on a singular wav file.
+
+    ARGUMENTS:
+     - root_path: absolute path of the dataset, useful for audio loading
+     - file_name: self explanatory
+     - save_location: self explanatory
+    """
+    feature_values, feature_names = long_feature_wav(root_path+'/'+file_name,1,1,0.1,0.05,
+            librosa_features=True)
+    json_data = dict(zip(feature_names, feature_values))
+
+    with open(save_location+'/'+file_name[:-4]+'.json', 'w', encoding='utf-8') as f:
+        json.dump(json_data, f, ensure_ascii=False, indent=4)
+    
+    del json_data
 
 
 
-# TODO : Wrapper for the new function, that creates a collection of json files
+# TODO : Make a new config file that contains all the parameters for the feat. extraction
 # TODO : Test your newly made code in the GTZAN dataset
+
