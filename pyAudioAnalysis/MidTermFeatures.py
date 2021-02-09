@@ -4,9 +4,6 @@ additional features using Librosa.
 Some slight modifications have been performed in
 directory_feature_extraction to add the beat and beat_conf
 in the features names vector.
-
-New functions have been implemented that handle single audio files and 
-json storing.
 """
 
 from __future__ import print_function
@@ -525,7 +522,7 @@ def long_feature_wav(wav_file, mid_window, mid_step,
     # TODO : Add the Genre as a feature (very simple)
     return mid_term_features, mid_feature_names
 
-def features_to_json(root_path, file_name, save_location):
+def features_to_json(root_path, file_name, save_location, yaml_object):
     """
     Function that saves the features returned from long_feature_wav
     to json files. This functions operates on a singular wav file.
@@ -534,9 +531,11 @@ def features_to_json(root_path, file_name, save_location):
      - root_path: absolute path of the dataset, useful for audio loading
      - file_name: self explanatory
      - save_location: self explanatory
+     - yaml_object: obj of the yaml object, contains parameters for the feature extraction
     """
-    feature_values, feature_names = long_feature_wav(root_path+'/'+file_name,1,1,0.1,0.05,
-            librosa_features=True)
+    m_win, m_step, s_win, s_step = yaml_object['parameters'].values()
+    feature_values, feature_names = long_feature_wav(root_path+'/'+file_name, m_win, m_step,
+            s_win, s_step, librosa_features=yaml_object['librosa_features'])
     json_data = dict(zip(feature_names, feature_values))
 
     with open(save_location+'/'+file_name[:-4]+'.json', 'w', encoding='utf-8') as f:
@@ -544,8 +543,7 @@ def features_to_json(root_path, file_name, save_location):
     
     del json_data
 
+def echoTest():
+    print("Hello from the pyAudioAnalysis library!")
 
-
-# TODO : Make a new config file that contains all the parameters for the feat. extraction
-# TODO : Test your newly made code in the GTZAN dataset
 
