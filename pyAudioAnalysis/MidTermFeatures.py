@@ -533,11 +533,12 @@ def features_to_json(root_path, file_name, save_location, yaml_object):
      - save_location: self explanatory
      - yaml_object: obj of the yaml object, contains parameters for the feature extraction
     """
-    m_win, m_step, s_win, s_step = yaml_object['parameters'].values()
+    m_win, m_step, s_win, s_step = yaml_object['parameters'].values() # params assignment from yaml file
     feature_values, feature_names = long_feature_wav(root_path+'/'+file_name, m_win, m_step,
-            s_win, s_step, librosa_features=yaml_object['librosa_features'])
-    json_data = dict(zip(feature_names, feature_values))
-
+            s_win, s_step, librosa_features=yaml_object['librosa_features']) # feature extraction
+    json_data = dict(zip(feature_names, feature_values)) # preparing the data for storing
+    
+    # storing data in json format
     with open(save_location+'/'+file_name[:-4]+'.json', 'w', encoding='utf-8') as f:
         json.dump(json_data, f, ensure_ascii=False, indent=4)
     
