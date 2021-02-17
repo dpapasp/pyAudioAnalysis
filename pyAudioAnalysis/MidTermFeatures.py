@@ -286,7 +286,7 @@ def directory_feature_extraction(folder_path, mid_window, mid_step,
                 mid_features = np.append(mid_features, beat_conf)
                 mid_feature_names.append("beat")
                 mid_feature_names.append("beat_conf")
-            # Simple code added by me 
+            # Block of code responsible for extra features
             if librosa_features:
                 librosa_feat, librosa_feat_names = _audio_to_librosa_features(file_path, sampling_rate=sampling_rate)
                 mid_features = np.append(mid_features, librosa_feat)
