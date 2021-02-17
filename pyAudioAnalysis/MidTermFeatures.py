@@ -17,6 +17,9 @@ from pyAudioAnalysis import audioBasicIO
 from pyAudioAnalysis import ShortTermFeatures
 import librosa as lb
 import json
+from surfboard.sound import Waveform
+from surfboard.feature_extraction import extract_features
+from pathlib import PurePath
 eps = 0.00000001
 
 
@@ -62,6 +65,32 @@ def _audio_to_librosa_features(filename, sampling_rate=22050):
 
     return np.array(features), feature_names
 
+def _audio_to_surfboard_features(filename, sampling_rate=44100):
+    """
+    Function that extracts the additional Surfboard features
+    ARGUMENTS:
+     - filename: name of the wav file 
+     - sampling_rate: used because pyAudioAnalysis uses different sampling rate 
+     for each wav file
+     
+     RETURNS:
+     - feature_values: the calculated features, returned as numpy array for consistency (1 x 13)
+     - feature_names: the feature names for consistency and pandas formating (1 x 13)
+    """
+    
+    sound = Waveform(path=filename, sample_rate=sampling_rate)
+    
+    features_list = ['spectral_kurtosis', 'spectral_skewness', 'spectral_slope','loudness'] # features can also be specified in a yaml file
+
+    # extract features with mean, std, dmean, dstd stats. Stats are computed on the spectral features. Loudness is just a scalar
+    feature_dataframe = extract_features([sound], features_list, ['mean', 'std',
+                                                                  'first_derivative_mean', 'first_derivative_std'])
+    # Surfboard exports features into dataframes. We convert the dataframe columns into a list and the row into a numpy array, for consistency.
+    feature_values = feature_dataframe.to_numpy()
+    feature_names = list(feature_dataframe.columns)
+    
+    return feature_values, feature_names
+    
 
 def beat_extraction(short_features, window_size, plot=False):
     """
@@ -444,7 +473,8 @@ def mid_feature_extraction_file_dir(folder_path, mid_window, mid_step,
 def long_feature_wav(wav_file, mid_window, mid_step,
                                  short_window, short_step,
                                  compute_beat=True,
-                                 librosa_features=False):
+                                 librosa_features=False,
+                                 surfboard_features=False):
 
     """
     This function computes the long-term feature per WAV file.
@@ -505,12 +535,21 @@ def long_feature_wav(wav_file, mid_window, mid_step,
             mid_features = np.append(mid_features, beat_conf)
             mid_feature_names.append("beat")
             mid_feature_names.append("beat_conf")
-         # Simple code added by me 
+         
+         # Block of code responsible for extra features 
+
          if librosa_features:
             librosa_feat, librosa_feat_names = _audio_to_librosa_features(wav_file, sampling_rate=sampling_rate)
             mid_features = np.append(mid_features, librosa_feat)
             for element in librosa_feat_names:
                 mid_feature_names.append(element)
+         
+         if surfboard_features:
+            surfboard_feat, surfboard_feat_names = _audio_to_surfboard_features(wav_file, sampling_rate=sampling_rate)
+            mid_features = np.append(mid_features, surfboard_feat)
+            for element in surfboard_feat_names:
+                mid_feature_names.append(element)
+
 
          if len(mid_term_features) == 0:
             # append feature vector
@@ -518,14 +557,14 @@ def long_feature_wav(wav_file, mid_window, mid_step,
          else:
             mid_term_features = np.vstack((mid_term_features, mid_features))
          
-    
-    # TODO : Add the Genre as a feature (very simple)
+             
     return mid_term_features, mid_feature_names
 
 def features_to_json(root_path, file_name, save_location, yaml_object):
     """
     Function that saves the features returned from long_feature_wav
     to json files. This functions operates on a singular wav file.
+    Appends the genre to the json file also.
 
     ARGUMENTS:
      - root_path: absolute path of the dataset, useful for audio loading
@@ -533,12 +572,17 @@ def features_to_json(root_path, file_name, save_location, yaml_object):
      - save_location: self explanatory
      - yaml_object: obj of the yaml object, contains parameters for the feature extraction
     """
-    m_win, m_step, s_win, s_step = yaml_object['parameters'].values() # params assignment from yaml file
+    m_win, m_step, s_win, s_step = yaml_object['parameters'].values()
     feature_values, feature_names = long_feature_wav(root_path+'/'+file_name, m_win, m_step,
-            s_win, s_step, librosa_features=yaml_object['librosa_features']) # feature extraction
-    json_data = dict(zip(feature_names, feature_values)) # preparing the data for storing
+            s_win, s_step, librosa_features=yaml_object['librosa_features'],
+            surfboard_features=yaml_object['surfboard_features'])
+    json_data = dict(zip(feature_names, feature_values))
     
-    # storing data in json format
+    # Adding the genre tag to the json dictionary, using pathlib for simplicity
+    p = PurePath(root_path)
+    genre = p.name
+    json_data['genre'] = genre
+
     with open(save_location+'/'+file_name[:-4]+'.json', 'w', encoding='utf-8') as f:
         json.dump(json_data, f, ensure_ascii=False, indent=4)
     
