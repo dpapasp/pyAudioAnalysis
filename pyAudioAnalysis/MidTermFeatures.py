@@ -11,6 +11,7 @@ import os
 import time
 import glob
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from pyAudioAnalysis import utilities
 from pyAudioAnalysis import audioBasicIO
@@ -18,7 +19,7 @@ from pyAudioAnalysis import ShortTermFeatures
 import librosa as lb
 import json
 from surfboard.sound import Waveform
-from surfboard.feature_extraction import extract_features
+from surfboard.feature_extraction import extract_features_from_waveform
 from pathlib import PurePath
 eps = 0.00000001
 
@@ -83,10 +84,13 @@ def _audio_to_surfboard_features(filename, sampling_rate=44100):
     features_list = ['spectral_kurtosis', 'spectral_skewness', 'spectral_slope','loudness'] # features can also be specified in a yaml file
 
     # extract features with mean, std, dmean, dstd stats. Stats are computed on the spectral features. Loudness is just a scalar
-    feature_dataframe = extract_features([sound], features_list, ['mean', 'std',
-                                                                  'first_derivative_mean', 'first_derivative_std'])
+    feature_dict = extract_features_from_waveform(features_list, ['mean', 'std',
+                                                                  'first_derivative_mean', 'first_derivative_std'], sound)
+    # convert to df first for consistency
+    feature_dataframe = pd.DataFrame([feature_dict])
     # Surfboard exports features into dataframes. We convert the dataframe columns into a list and the row into a numpy array, for consistency.
-    feature_values = feature_dataframe.to_numpy()
+
+    feature_values = feature_dataframe.to_numpy() 
     feature_names = list(feature_dataframe.columns)
     
     return feature_values, feature_names
@@ -286,7 +290,7 @@ def directory_feature_extraction(folder_path, mid_window, mid_step,
                 mid_features = np.append(mid_features, beat_conf)
                 mid_feature_names.append("beat")
                 mid_feature_names.append("beat_conf")
-            # Block of code responsible for extra features
+            # Simple code added by me 
             if librosa_features:
                 librosa_feat, librosa_feat_names = _audio_to_librosa_features(file_path, sampling_rate=sampling_rate)
                 mid_features = np.append(mid_features, librosa_feat)
@@ -583,12 +587,12 @@ def features_to_json(root_path, file_name, save_location, yaml_object):
     genre = p.name
     json_data['genre'] = genre
 
-    with open(save_location+'/'+file_name[:-4]+'.json', 'w', encoding='utf-8') as f:
+    with open(save_location+'/'+file_name+'.json', 'w', encoding='utf-8') as f:
         json.dump(json_data, f, ensure_ascii=False, indent=4)
     
     del json_data
 
 def echoTest():
-    print("Hello from the pyAudioAnalysis library!")
+    print("Hello from the pyAudioAnalysis library! 26/4")
 
 
