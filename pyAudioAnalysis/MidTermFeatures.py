@@ -587,11 +587,12 @@ def features_to_json(root_path, file_name, save_location, yaml_object):
     genre = p.name
     json_data['genre'] = genre
 
-    with open(save_location+'/'+file_name+'.json', 'w', encoding='utf-8') as f:
+    json_file_name = save_location+'/'+file_name+'.json'
+    with open(json_file_name, 'w', encoding='utf-8') as f:
         json.dump(json_data, f, ensure_ascii=False, indent=4)
     
     del json_data
-
+    return json_file_name
 def echoTest():
     print("Hello from the pyAudioAnalysis library! 26/4")
 
