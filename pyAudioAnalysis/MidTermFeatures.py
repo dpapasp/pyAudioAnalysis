@@ -40,9 +40,7 @@ def _audio_to_librosa_features(filename, sampling_rate=22050):
     """
     
     y, sr = lb.load(filename, sr=sampling_rate)
-
-    print("Calculating librosa features for {}.".format(filename))
-
+    
     feature_names = ["spectral_bandwidth_mean","spectral_flatness_mean","spectral_rms_mean",
                    "spectral_bandwidth_std","spectral_flatness_std","spectral_rms_std",
                      "spectral_bandwidth_delta_mean", "spectral_bandwidth_delta_std",
@@ -498,10 +496,7 @@ def long_feature_wav(wav_file, mid_window, mid_step,
     """
     
 
-    mid_term_features = np.array([])
-    
-
-    print("Analyzing file {}.".format(wav_file))
+    mid_term_features = np.array([]) 
     
     sampling_rate, signal = audioBasicIO.read_audio_file(wav_file)
     if sampling_rate == 0:
